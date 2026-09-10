@@ -98,9 +98,8 @@ def create_app(data_dir=None,setup_code=None,secure_cookie=None):
             row=db.execute('SELECT * FROM board WHERE id=1').fetchone()
             state=json.loads(row['state'])
             events=[{'id':r['id'],'at':r['at'],'actor':r['actor'],'detail':json.loads(r['detail']),'metrics':json.loads(r['metrics'])} for r in db.execute('SELECT * FROM events ORDER BY id DESC LIMIT 400')][::-1]
-            comments=[dict(r) for r in db.execute('SELECT c.id,c.goal_id AS goalId,c.text,c.created AS at,u.name AS author,u.role FROM comments c JOIN users u ON u.id=c.user_id ORDER BY c.id DESC LIMIT 500')][::-1]
         if user['role']!='owner': state['wheel']=None
-        return {'declaration':DECLARATION,'user':public_user(user),'state':state,'version':row['version'],'updatedAt':row['updated'],'history':events,'comments':comments,'serverTime':now()}
+        return {'declaration':DECLARATION,'user':public_user(user),'state':state,'version':row['version'],'updatedAt':row['updated'],'history':events,'serverTime':now()}
 
     @app.get('/')
     def index(): return FileResponse(ROOT/'public'/'index.html')
@@ -215,15 +214,6 @@ def create_app(data_dir=None,setup_code=None,secure_cookie=None):
         identity(request,csrf=True,owner=True)
         with store.connect() as db: db.execute('UPDATE invites SET used=1 WHERE id=?',(iid,))
         return {'ok':True}
-
-    @app.post('/api/comments')
-    def comment(payload:dict,request: Request):
-        user=identity(request,csrf=True);limit(request,'comment',30,60)
-        text=payload.get('text','');gid=payload.get('goalId','')
-        if not isinstance(text,str) or not 1<=len(text.strip())<=2000: raise HTTPException(400,'Комментарий должен содержать 1–2 000 символов.')
-        if gid not in ['all']+[g['id'] for g in DECLARATION['goals']]: raise HTTPException(400,'Неизвестное обязательство.')
-        with store.connect() as db: db.execute('INSERT INTO comments(user_id,goal_id,text,created) VALUES(?,?,?,?)',(user['id'],gid,text.strip(),now()))
-        return board(user)
 
     @app.get('/api/export')
     def export(request: Request):

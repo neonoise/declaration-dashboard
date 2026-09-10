@@ -1,6 +1,7 @@
 """Acceptance tests for the actual shared API; all clients use independent cookies."""
 import importlib
 import copy
+import sqlite3
 import pytest
 from fastapi.testclient import TestClient
 
@@ -39,6 +40,7 @@ def test_initial_board_exact_signed_source_and_no_progress(env):
     assert board['declaration']['signedAt'] == '2026-08-15'
     assert sum(len(x['steps']) for x in board['declaration']['goals']) == 24
     assert board['history'] == []
+    assert 'comments' not in board
     assert board['version'] == 0
     assert not any(any(x['steps'].values()) for x in board['state']['goals'].values())
 
@@ -70,14 +72,14 @@ def test_cross_origin_write_is_forbidden(env):
     _, owner, headers, _ = env
     assert owner.post('/api/invites', json={'name':'x'}, headers={**headers,'Origin':'https://evil.invalid'}).status_code == 403
 
-def test_guest_reads_and_comments_but_cannot_edit(env):
+def test_guest_is_read_only_and_comments_route_is_removed(env):
     g, headers, _ = guest(env)
     b = g.get('/api/board').json()
     assert b['user']['role'] == 'member'
+    assert 'comments' not in b
     assert g.put('/api/board', json={'version':0,'state':b['state']}, headers=headers).status_code == 403
     assert g.post('/api/invites', json={'name':'x'}, headers=headers).status_code == 403
-    assert g.post('/api/comments', json={'goalId':'g1','text':'Согласуем контрольную точку.'}, headers=headers).status_code == 200
-    assert len(env[1].get('/api/board').json()['comments']) == 1
+    assert g.post('/api/comments', json={'goalId':'g1','text':'Согласуем контрольную точку.'}, headers=headers).status_code == 404
 
 def test_invite_is_single_use(env):
     _, _, token = guest(env)
@@ -167,11 +169,26 @@ def test_bad_login_generic_failure(env):
     assert r.status_code == 401
     assert 'password_hash' not in r.text
 
-def test_comment_validation(env):
-    _, owner, headers, _ = env
-    assert owner.post('/api/comments', json={'goalId':'g1','text':'   '}, headers=headers).status_code == 400
-    assert owner.post('/api/comments', json={'goalId':'not-real','text':'Test'}, headers=headers).status_code == 400
-    assert owner.post('/api/comments', json={'goalId':'g1','text':'x'*2001}, headers=headers).status_code == 400
+def test_new_database_has_no_comments_table(env):
+    database = env[3] / 'declaration.sqlite3'
+    with sqlite3.connect(database) as db:
+        assert db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='comments'").fetchone() is None
+
+def test_legacy_comments_table_is_preserved_but_not_exposed(env):
+    _, _, _, path = env
+    database = path / 'declaration.sqlite3'
+    with sqlite3.connect(database) as db:
+        db.execute('CREATE TABLE comments(id INTEGER PRIMARY KEY, text TEXT NOT NULL)')
+        db.execute("INSERT INTO comments(text) VALUES('legacy discussion')")
+
+    restarted = importlib.import_module('app').create_app(str(path), setup_code='different', secure_cookie=False)
+    client = TestClient(restarted)
+    assert client.post('/api/login', json={'username':'maxim','password':PASSWORD}, headers=HEAD).status_code == 200
+    board = client.get('/api/board').json()
+    assert 'comments' not in board
+    assert 'legacy discussion' not in client.get('/api/board').text
+    with sqlite3.connect(database) as db:
+        assert db.execute('SELECT text FROM comments').fetchone()[0] == 'legacy discussion'
 
 def test_html_security_headers(env):
     r = env[1].get('/')
