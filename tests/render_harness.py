@@ -55,7 +55,7 @@ with tempfile.TemporaryDirectory() as td:
   load(page,LOCAL,MEMORY)
   page.wait_for_selector('.goal-card')
   check(page.locator('.goal-card').count()==6,'DOM: six signed obligations')
-  check(page.locator('.local-banner').is_visible(),'DOM: local-only notice visible')
+  check(page.locator('.local-banner').count()==0,'DOM: removed banner stays absent')
   page.screenshot(path=str(ART/'dashboard-desktop.png'),full_page=True)
   page.locator('[data-goal="g5"]').click();page.locator('#g5s1').check()
   page.wait_for_function('document.querySelector(".ring-label strong").textContent==="17%"')

@@ -23,7 +23,7 @@ with sync_playwright() as p:
     page.goto(LOCAL)
     page.wait_for_selector('[data-card="g1"]')
     check(page.locator('.goal-card').count()==6,'local: six cards')
-    check(page.locator('.local-banner').is_visible(),'local: honest synchronization notice')
+    check(page.locator('.local-banner').count()==0,'local: removed banner stays absent')
     page.screenshot(path=str(ART/'dashboard-desktop.png'),full_page=True)
     page.locator('[data-goal="g5"]').click()
     page.locator('#g5s1').check()
