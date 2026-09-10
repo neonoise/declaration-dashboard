@@ -1,0 +1,30 @@
+{
+  "passed": 23,
+  "checks": [
+    "DOM: six signed obligations",
+    "DOM: local-only notice visible",
+    "DOM: acceptance independent from progress",
+    "DOM: app reinitializes correctly from storage fixture",
+    "DOM: all map nodes interactive",
+    "DOM: criterion toggle does not discard an unsaved proof draft",
+    "DOM: storage failure keeps unsaved wheel form open",
+    "DOM: group report omits private wheel reflection",
+    "DOM: history graph generated only after actual fixture actions",
+    "DOM: document contains obligations and criteria",
+    "DOM: signed price retained without payment function",
+    "DOM: signed reward retained",
+    "mobile DOM: no horizontal overflow on overview",
+    "mobile DOM: no horizontal overflow on map",
+    "mobile DOM: accessible task drawer",
+    "integrated DOM/API: owner authentication",
+    "integrated DOM/API: one-time invitation created",
+    "API: guest accepts invitation with separate session",
+    "integrated DOM/API: guest cannot interact with owner checkboxes",
+    "DOM: comment button is a native submit control",
+    "integrated DOM/API: guest comment is persisted",
+    "integrated DOM/API: poll delivers another session comment",
+    "DOM: no uncaught JavaScript errors"
+  ],
+  "errors": [],
+  "scope": "Rendered DOM with explicit in-memory localStorage and in-process API adapters; browser URL navigation blocked by managed policy. Native file/browser network end-to-end not run."
+}

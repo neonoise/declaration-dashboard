@@ -1,0 +1,10 @@
+data/
+*.sqlite3*
+.env
+.git/
+.venv/
+__pycache__/
+tests/
+docs/
+preview/
+*.html

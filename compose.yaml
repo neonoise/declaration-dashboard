@@ -1,0 +1,14 @@
+services:
+  dashboard:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      DATA_DIR: /data
+      COOKIE_SECURE: "1"
+      PUBLIC_URL: ${PUBLIC_URL:?Set the public HTTPS origin in .env}
+    volumes:
+      - declaration-data:/data
+volumes:
+  declaration-data:
